@@ -364,7 +364,7 @@ public class PageWidget extends View{
 				postInvalidate();
 			}
 			else
-				startAnimation(1200);
+				startAnimation(DURATION);
 		}
 		else if(event.getAction() == MotionEvent.ACTION_MOVE)
 		{
