@@ -154,27 +154,53 @@ public class PageWidget extends View{
 		
 		mDegrees = (float)Math.toDegrees(Math.atan2(mBezierControl1.x - mCornerX, mBezierControl2.y - mCornerY));
 		
-		canvas.save();
-		canvas.clipPath(mPath0);
-		canvas.clipPath(mPath1, Region.Op.INTERSECT);
-		canvas.drawBitmap(bitmap, 0.0f, 0.0f, null);
-		canvas.rotate(mDegrees, mBezierStart1.x, mBezierStart1.y);
-		mBackShadowDrawableLR.setBounds((int)mBezierStart1.x, (int)mBezierStart1.y, 
-				(int)(mBezierStart1.x + mTouchToCornerDis/4.0f), (int)(mMaxLength + mBezierStart1.y));
-		mBackShadowDrawableRL.draw(canvas);
-		canvas.restore();
+		int left;
+		int top;
+		if(mIsRTandLB)
+		{
+			left = (int)mBezierStart1.x;
+			top = (int)(mBezierStart1.x + mTouchToCornerDis/4.0f);
+		}
+		else
+		{
+			left = (int)(mBezierStart1.x - mTouchToCornerDis/4.0f);
+			top = (int)mBezierStart1.x;
+		}
+		GradientDrawable[] gradientDrawable = {mBackShadowDrawableLR, mBackShadowDrawableRL};
+		for(int i=0,len=gradientDrawable.length; i<len; i++)
+		{
+			canvas.save();
+			canvas.clipPath(mPath0);
+			canvas.clipPath(mPath1, Region.Op.INTERSECT);
+			canvas.drawBitmap(bitmap, 0.0f, 0.0f, null);
+			canvas.rotate(mDegrees, mBezierStart1.x, mBezierStart1.y);
+			gradientDrawable[i].setBounds(left, (int)mBezierStart1.y, 
+					top, (int)(mMaxLength + mBezierStart1.y));
+			gradientDrawable[i].draw(canvas);
+			canvas.restore();
+		}
 	}
 	
 	public void drawCurrentPageShadow(Canvas canvas)
 	{
+		float pointX;
+		float pointY;
 		double radian = Math.PI/4 - Math.atan2(mBezierControl1.y - mTouch.y, mTouch.x - mBezierControl1.x);
 		double d2 = 35.35d * Math.cos(radian);
-		double d3 = 35.35d * Math.signum(radian);
-		float f1 = (float)(d2+mTouch.x);
-		float f2 = (float)(d2+mTouch.y);
-		float f3;
+		double d3 = 35.35d * Math.sin(radian);
+		if(mIsRTandLB)
+		{
+			pointX = (float)(d2+mTouch.x);
+			pointY = (float)(d3+mTouch.y);
+		}
+		else
+		{
+			pointX = (float)(d2+mTouch.x);
+			pointY = (float)(mTouch.y-d3);
+		}
+		
 		mPath1.reset();
-		mPath1.moveTo(f1, f2);
+		mPath1.moveTo(pointX, pointY);
 		mPath1.lineTo(mTouch.x, mTouch.y);
 		mPath1.lineTo(mBezierControl1.x, mBezierControl1.y);
 		mPath1.lineTo(mBezierStart1.x, mBezierStart1.y);
@@ -183,41 +209,72 @@ public class PageWidget extends View{
 		canvas.clipPath(mPath0, Region.Op.XOR);
 		canvas.clipPath(mPath1, Region.Op.INTERSECT);
 		
-		int left = (int)mBezierControl1.x;
-		int right = 25 + (int)mBezierControl1.x;
+		GradientDrawable gradientDrawable;
+		
+		int left;
+		int right;
+		if(mIsRTandLB)
+		{
+			left = (int)(mBezierControl1.x - 25.0f);
+			right = 1 + (int)mBezierControl1.x;
+			gradientDrawable = mFrontShadowDrawableHBT;
+		}
+		else
+		{
+			left = (int)mBezierControl1.x;
+			right = 25 + (int)mBezierControl1.x;
+			gradientDrawable = mFrontShadowDrawableVLR;
+		}
 		
 		canvas.rotate((float)Math.toDegrees(Math.atan2(mTouch.x - mBezierControl1.x, mBezierControl1.y - mTouch.y)), 
 				mBezierControl1.x, mBezierControl1.y);
-		mFrontShadowDrawableVLR.setBounds(left, (int)(mBezierControl1.y - mMaxLength), 
+		gradientDrawable.setBounds(left, (int)(mBezierControl1.y - mMaxLength), 
 				right, (int)mBezierControl1.y);
-		mFrontShadowDrawableVLR.draw(canvas);
+		gradientDrawable.draw(canvas);
 		canvas.restore();
 		
 		mPath1.reset();
-		mPath1.moveTo(f1, f2);
+		mPath1.moveTo(pointX, pointY);
 		mPath1.lineTo(mTouch.x, mTouch.y);
 		mPath1.lineTo(mBezierControl2.x, mBezierControl2.y);
 		mPath1.lineTo(mBezierStart2.x, mBezierStart2.y);
 		mPath1.close();
-		canvas.save();
-		canvas.clipPath(mPath0, Region.Op.XOR);
-		canvas.clipPath(mPath1, Region.Op.INTERSECT);
 		
-		int top = (int)mBezierControl2.y;
-		int bottom = (int)(25.0f+mBezierControl2.x);
-		canvas.rotate((float)Math.toDegrees(Math.atan2(mBezierControl2.y - mTouch.y, mBezierControl2.x - mTouch.x)), 
-				mBezierControl2.x, mBezierControl2.y);
+		int top;
+		int bottom;
+		if(mIsRTandLB)
+		{
+			top = (int)(mBezierControl2.y - 25.0f);
+			bottom = (int)(1.0f + mBezierControl2.y);
+			gradientDrawable = mFrontShadowDrawableHBT;
+		}
+		else
+		{
+			top = (int)mBezierControl2.y;
+			bottom = (int)(25.0f+mBezierControl2.x);
+			gradientDrawable = mFrontShadowDrawableHTB;
+		}
+		
+		float f3;
 		if(mBezierControl2.y>=0.0f)
 			f3 = mBezierControl2.y;
 		else
 			f3 = mBezierControl2.y - mHeight;
 		int n = (int)Math.hypot(mBezierControl2.x, f3);
 		if(n<=mMaxLength)
-			mFrontShadowDrawableHTB.setBounds((int)(mBezierControl2.x - mMaxLength), top, 
+			gradientDrawable.setBounds((int)(mBezierControl2.x - mMaxLength), top, 
 					(int)mBezierControl2.x, bottom);
 		else
-			mFrontShadowDrawableHTB.setBounds((int)(mBezierControl2.x - 25.0F)-n, top, 
+			gradientDrawable.setBounds((int)(mBezierControl2.x - 25.0F)-n, top, 
 					(int)(mBezierControl2.x + mMaxLength)-n, bottom);
+		
+		canvas.save();
+		canvas.clipPath(mPath0, Region.Op.XOR);
+		canvas.clipPath(mPath1, Region.Op.INTERSECT);
+		canvas.rotate((float)Math.toDegrees(Math.atan2(mBezierControl2.y - mTouch.y, mBezierControl2.x - mTouch.x)), 
+				mBezierControl2.x, mBezierControl2.y);
+		gradientDrawable.draw(canvas);
+		canvas.restore();
 	}
 	
 	public void setBitmaps(Bitmap bmp1, Bitmap bmp2)
@@ -226,23 +283,24 @@ public class PageWidget extends View{
 		mNextPageBitmap = bmp2;
 	}
 	
-	public boolean abortAnimation()
+	public void abortAnimation()
 	{
-		if(mCornerX>0)
-			return true;
-		else
-			return false;
+		if(!mScroller.isFinished())
+			mScroller.abortAnimation();
 	}
 	
 	public void calcCornerXY(float width, float height)
 	{
 		if(width<=mWidth/2)
-		{
 			mCornerX = 0;
-			if(height>mHeight/2)
-				mIsRTandLB = true;
+		else
+			mCornerX = mWidth;
+		
+		if(height<=mHeight/2)
 			mCornerY = 0;
-		}
+		else
+			mCornerY = mHeight;
+		mIsRTandLB = !((mCornerX==0&&mCornerY==0)||(mCornerX==mWidth&&mCornerY==mHeight));
 	}
 	
 	public void computeScroll()
@@ -285,29 +343,43 @@ public class PageWidget extends View{
 	    mPath1.lineTo(mBezierEnd2.x, mBezierEnd2.y);
 	    mPath1.close();
 	    
-	    int left = (int)(mBezierStart1.x - 1.0f);
-	    int right = (int)(1.0F + (f1 + mBezierStart1.x));
-	    
-	    canvas.save();
-	    canvas.clipPath(mPath1, Region.Op.INTERSECT);
-	    mPaint.setColorFilter(mColorMatrixFilter);
-	    float f2 = (float)Math.hypot(mCornerX - mBezierControl1.x, mBezierControl2.y - mCornerY);
-		float f3 = (mCornerX - mBezierControl1.x) / f2;
-		float f4 = (mBezierControl2.y - mCornerY) / f2;
-		mMatrixArray[0] = (1.0F - f4 * (2.0F * f4));
-		mMatrixArray[1] = (f4 * (2.0F * f3));
-		mMatrixArray[3] = mMatrixArray[1];
-		mMatrixArray[4] = (1.0F - f3 * (2.0F * f3));
-		mMatrix.reset();
-		mMatrix.setValues(mMatrixArray);
-		mMatrix.preTranslate(-mBezierControl1.x, -mBezierControl1.y);
-		mMatrix.postTranslate(mBezierControl1.x, mBezierControl1.y);
-		canvas.drawBitmap(bitmap, mMatrix, mPaint);
-		mPaint.setColorFilter(null);
-		canvas.rotate(mDegrees, mBezierStart1.x, mBezierStart1.y);
-		mFolderShadowDrawableLR.setBounds(left, (int)mBezierStart1.y, right, (int)(mBezierStart1.y + mMaxLength));
-		mFolderShadowDrawableLR.draw(canvas);
-		canvas.restore();
+	    int left;
+	    int right;
+	    if(mIsRTandLB)
+	    {
+	    	left = (int)(mBezierStart1.x - 1.0f);
+		    right = (int)(1.0F + (f1 + mBezierStart1.x));
+	    }
+	    else
+	    {
+	    	left = (int)(mBezierStart1.x - f1 - 1.0f);
+	    	right = (int)(1.0f + mBezierStart1.x);
+	    }
+	    GradientDrawable[] gradientDrawable = {mFolderShadowDrawableLR, mFolderShadowDrawableRL};
+	    for(int i=0,len=gradientDrawable.length; i<len; i++)
+	    {
+	    	canvas.save();
+		    canvas.clipPath(mPath0);
+		    canvas.clipPath(mPath1, Region.Op.INTERSECT);
+		    mPaint.setColorFilter(mColorMatrixFilter);
+		    float f2 = (float)Math.hypot(mCornerX - mBezierControl1.x, mBezierControl2.y - mCornerY);
+			float f3 = (mCornerX - mBezierControl1.x) / f2;
+			float f4 = (mBezierControl2.y - mCornerY) / f2;
+			mMatrixArray[0] = (1.0F - f4 * (2.0F * f4));
+			mMatrixArray[1] = (f4 * (2.0F * f3));
+			mMatrixArray[3] = mMatrixArray[1];
+			mMatrixArray[4] = (1.0F - f3 * (2.0F * f3));
+			mMatrix.reset();
+			mMatrix.setValues(mMatrixArray);
+			mMatrix.preTranslate(-mBezierControl1.x, -mBezierControl1.y);
+			mMatrix.postTranslate(mBezierControl1.x, mBezierControl1.y);
+			canvas.drawBitmap(bitmap, mMatrix, mPaint);
+			mPaint.setColorFilter(null);
+			canvas.rotate(mDegrees, mBezierStart1.x, mBezierStart1.y);
+			gradientDrawable[i].setBounds(left, (int)mBezierStart1.y, right, (int)(mBezierStart1.y + mMaxLength));
+			gradientDrawable[i].draw(canvas);
+			canvas.restore();
+		}
 	}
 	
 	public PointF getCross(PointF pf1, PointF pf2, PointF pf3, PointF pf4)
@@ -361,10 +433,9 @@ public class PageWidget extends View{
 			{
 				mTouch.x = mCornerX-0.09f;
 				mTouch.y = mCornerY-0.09f;
-				postInvalidate();
 			}
-			else
-				startAnimation(DURATION);
+			startAnimation(DURATION);
+			postInvalidate();
 		}
 		else if(event.getAction() == MotionEvent.ACTION_MOVE)
 		{
@@ -377,12 +448,30 @@ public class PageWidget extends View{
 	
 	private void startAnimation(int duration)
 	{
+		int dx;
+		int dy;
 		if(mCornerX>0)
 		{
-			int dx = -(int)(mWidth+mTouch.x);
-			int dy = (int)(mHeight-mTouch.y);
-			mScroller.startScroll((int)mTouch.x, (int)mTouch.y, dx, dy, duration);
+			dx = -(int)(mWidth+mTouch.x);
 		}
+		else
+		{
+			dx = (int)(mWidth-mTouch.x)+mWidth;
+		}
+		if(mCornerY>0)
+		{
+			dy = (int)(1.0f - mTouch.y);
+		}
+		else
+		{
+			dy = (int)(mHeight - mTouch.y);
+		}
+		mScroller.startScroll((int)mTouch.x, (int)mTouch.y, dx, dy, duration);
+	}
+	
+	public boolean dragToRight()
+	{
+		return mCornerX<=0;
 	}
 	
 	public boolean canDragOver()

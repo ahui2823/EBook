@@ -15,8 +15,6 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 
 public class BookPageFactory {
-	private int m_textColor = 0xff000000;
-	
 	private int mWidth;
 	private int mHeight;
 	private Paint mPaint;
@@ -25,7 +23,7 @@ public class BookPageFactory {
 	private float mVisibleWidth;
 	
 	private int marginDown = 30;
-	private int marginUp = 25;
+	private int marginUp = 40;
 	private int marginWidth = 15;
 	private int mRowSpace = 3;
 	
@@ -51,10 +49,9 @@ public class BookPageFactory {
 		mWidth = width;
 		mHeight = height;
 		mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-		mPaint.setColor(AppData.fontColor);
+		mPaint.setColor(AppData.m_fontColor);
 		mPaint.setTextAlign(Paint.Align.LEFT);
-		mPaint.setTextSize(AppData.fontSize);
-		mPaint.setColor(m_textColor);
+		mPaint.setTextSize(AppData.m_fontSize);
 		calculateLineCount();
 	}
 	
@@ -62,7 +59,7 @@ public class BookPageFactory {
 	{
 		mVisibleWidth = mWidth - 2*marginWidth;
 		mVisibleHeight = mHeight - marginUp - marginDown - m_downSpace;
-		mLineCount = (int)(mVisibleHeight/(AppData.fontSize+mRowSpace));
+		mLineCount = (int)(mVisibleHeight/(AppData.m_fontSize+mRowSpace));
 	}
 	
 	public boolean isFirstPage()
@@ -74,44 +71,64 @@ public class BookPageFactory {
 		return m_isLastPage;
 	}
 	
-	public void nextPage()
-	{
-		if(m_mbBufEnd>=m_mbBufLen)
-			m_isLastPage = true;
-		else
-		{
-			m_isLastPage = false;
-			m_lines.clear();
-			m_mbBufBegin = m_mbBufEnd;
-			pageDown(m_lines);
-		}
-	}
-	
 	protected void pageDown(List<String> tList)
 	{
-		String source = "";
 		byte[] arrayOfByte = readParagraphForward(m_mbBufEnd);
 		m_mbBufEnd += arrayOfByte.length;
 		try {
-			source = new String(arrayOfByte, m_strCharsetName);
+			String source = new String(arrayOfByte, m_strCharsetName);
+			while(tList.size()<mLineCount)
+			{
+				int len = mPaint.breakText(source, true, mVisibleWidth, null);
+				String subString = source.substring(0, len);
+				int pos = subString.indexOf(AppData.REPLACE_STR);
+				if(pos!=-1)
+				{
+					subString = subString.substring(0, pos);
+					source = source.substring(pos+AppData.REPLACE_STR_LEN);
+				}
+				else
+				{
+					source = source.substring(len);
+				}
+				tList.add(subString);
+				if(source.length()<=0)
+					break;
+			}
+			m_mbBufEnd -= source.getBytes(m_strCharsetName).length;
 		} catch (UnsupportedEncodingException e) {
 			e.printStackTrace();
 		}
-		while(source.indexOf("\r\n")!=-1)
-		{
-			source = source.replaceAll("\r\n", "");
-		}
-		while(tList.size()<mLineCount)
-		{
-			int len = mPaint.breakText(source, true, mVisibleWidth, null);
-			tList.add(source.substring(0, len));
-			source = source.substring(len);
-		}
 	}
 	
-	protected void pageUp()
+	protected void pageUp(List<String> tList)
 	{
-		
+		byte[] arrayOfByte = readParagraphBack(m_mbBufBegin);
+		m_mbBufBegin -= arrayOfByte.length;
+		try {
+			String source = new String(arrayOfByte, m_strCharsetName);
+			while(tList.size()<mLineCount)
+			{
+				int len = mPaint.breakText(source, false, mVisibleWidth, null);
+				int strLen = source.length();
+				String subString = source.substring(strLen-len);
+				int pos = subString.lastIndexOf(AppData.REPLACE_STR);
+				if(pos!=-1)
+				{
+					subString = subString.substring(pos+AppData.REPLACE_STR_LEN);
+					source = source.substring(0, pos);
+				}
+				else
+					source = source.substring(0, strLen-len);
+				tList.add(0, subString);
+				if(source.length()<=0)
+					break;
+			}
+			m_mbBufBegin += source.getBytes(m_strCharsetName).length;
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	public void prePage()
@@ -125,14 +142,29 @@ public class BookPageFactory {
 		{
 			m_isFirstPage = false;
 			m_lines.clear();
-			pageUp();
+			m_mbBufEnd = m_mbBufBegin;
+			pageUp(m_lines);
+		}
+	}
+	
+	public void nextPage()
+	{
+		if(m_mbBufEnd>=m_mbBufLen)
+		{
+			m_mbBufEnd = m_mbBufLen;
+			m_isLastPage = true;
+		}
+		else
+		{
+			m_isLastPage = false;
+			m_lines.clear();
+			m_mbBufBegin = m_mbBufEnd;
 			pageDown(m_lines);
 		}
 	}
 	
 	public void onDraw(Canvas canvas)
 	{
-		mPaint.setTextSize(AppData.fontSize);
 		if(m_lines.size()==0)
 			pageDown(m_lines);
 		if(m_book_bg==null)
@@ -140,22 +172,22 @@ public class BookPageFactory {
 		else
 			canvas.drawBitmap(m_book_bg, 0.0f, 0.0f, null);
 		
-		mPaint.setTextSize(6.0f);
+		int dy = marginUp;
+		mPaint.setTextSize(AppData.m_fontSize);
+		for(String text: m_lines)
+		{
+			canvas.drawText(text, marginWidth, dy, mPaint);
+			dy += AppData.m_fontSize + mRowSpace;
+		}
+		
+		mPaint.setTextSize(AppData.m_textFontSize);
 		int rateLen = 3+ (int)mPaint.measureText("999.9%");
 		float ration = (float)(1.0d * m_mbBufBegin/m_mbBufLen);
 		String strRation = new DecimalFormat("#0.00").format(100.0f*ration)+"%";
 		Calendar calendar = Calendar.getInstance();
-		canvas.drawText(calendar.get(11)+"时"+calendar.get(12)+"分", 10.0f, mHeight-m_downSpace-8, mPaint);
-		canvas.drawText(strRation, mWidth-rateLen, mHeight-m_downSpace, mPaint);
-		
-		int dy = marginUp;
-		
-		mPaint.setTextSize(AppData.fontSize);
-		for(String text: m_lines)
-		{
-			canvas.drawText(text, marginWidth, dy, mPaint);
-			dy += AppData.fontSize + mRowSpace;
-		}
+		String time = calendar.get(11)+"时"+calendar.get(12)+"分";
+		canvas.drawText(time, 10.0f, mHeight-m_downSpace-AppData.m_textFontSize, mPaint);
+		canvas.drawText(strRation, mWidth-rateLen, mHeight-m_downSpace-AppData.m_textFontSize, mPaint);
 	}
 	
 	public void openBook(AssetManager assetManager, String fileName)
@@ -175,16 +207,27 @@ public class BookPageFactory {
 		
 	}
 	
-	protected byte[] readParagraphBack(int begin)
+	protected byte[] readParagraphBack(int end)
 	{
-		byte[] arrayOfByte = new byte[100];
+		int pageLen = 2048;
+		int bufLen = end>pageLen?pageLen:end;
+		byte[] arrayOfByte = new byte[bufLen];
+		for(int i=0, j=end-bufLen; i<bufLen; i++,j++)
+		{
+			arrayOfByte[i] = m_mbBuf.get(j);
+		}
 		return arrayOfByte;
-		
 	}
 	
 	protected byte[] readParagraphForward(int begin)
 	{
-		byte[] arrayOfByte = new byte[100];
+		int pageLen = 2048;
+		int bufLen = m_mbBufLen-begin>pageLen?pageLen:m_mbBufLen-begin;
+		byte[] arrayOfByte = new byte[bufLen];
+		for(int i=0,j=begin; i<bufLen; i++,j++)
+		{
+			arrayOfByte[i] = m_mbBuf.get(j);
+		}
 		return arrayOfByte;
 	}
 	
@@ -203,7 +246,7 @@ public class BookPageFactory {
 	
 	public void setFontSize(int size)
 	{
-		AppData.fontSize = size;
-		mLineCount = (int)(mVisibleHeight/(AppData.fontSize+mRowSpace));
+		AppData.m_fontSize = size;
+		mLineCount = (int)(mVisibleHeight/(AppData.m_fontSize+mRowSpace));
 	}
 }
