@@ -71,14 +71,14 @@ public class EBookActivity extends Activity {
 					{
 						mPageFactory.nextPage();
 						if(mPageFactory.isLastPage())
-							Toast.makeText(EBookActivity.this, "已经是最后一页了", Toast.LENGTH_SHORT).show();
+							Toast.makeText(EBookActivity.this, "It is at last page.", Toast.LENGTH_SHORT).show();
 					}
 					else
 					{
 						mPageFactory.prePage();
 						if(mPageFactory.isFirstPage())
 						{
-							Toast.makeText(EBookActivity.this, "已经是第一页了", Toast.LENGTH_SHORT).show();
+							Toast.makeText(EBookActivity.this, "It is at first page.", Toast.LENGTH_SHORT).show();
 							return false;
 						}
 					}

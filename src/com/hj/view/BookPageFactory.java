@@ -185,7 +185,7 @@ public class BookPageFactory {
 		float ration = (float)(1.0d * m_mbBufBegin/m_mbBufLen);
 		String strRation = new DecimalFormat("#0.00").format(100.0f*ration)+"%";
 		Calendar calendar = Calendar.getInstance();
-		String time = calendar.get(11)+"Ê±"+calendar.get(12)+"·Ö";
+		String time = calendar.get(11)+":"+calendar.get(12);
 		canvas.drawText(time, 10.0f, mHeight-m_downSpace-AppData.m_textFontSize, mPaint);
 		canvas.drawText(strRation, mWidth-rateLen, mHeight-m_downSpace-AppData.m_textFontSize, mPaint);
 	}
