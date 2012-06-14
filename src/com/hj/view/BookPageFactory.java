@@ -44,6 +44,8 @@ public class BookPageFactory {
 	
 	private int m_backColor = 0xffff9e85;
 	
+	private boolean isLastGetNext = true;
+	
 	public BookPageFactory(int width, int height)
 	{
 		mWidth = width;
@@ -81,6 +83,7 @@ public class BookPageFactory {
 		}
 		else
 		{
+			isLastGetNext = true;
 			m_isLastPage = false;
 			m_lines.clear();
 			m_mbBufBegin = m_mbBufEnd;
@@ -97,11 +100,17 @@ public class BookPageFactory {
 		}
 		else
 		{
+			isLastGetNext = false;
 			m_isFirstPage = false;
 			m_lines.clear();
 			m_mbBufEnd = m_mbBufBegin;
 			pageUp(m_lines);
 		}
+	}
+	
+	public boolean isLastGetNext()
+	{
+		return isLastGetNext;
 	}
 	
 	public void onDraw(Canvas canvas)

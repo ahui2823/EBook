@@ -11,12 +11,12 @@ import android.graphics.Path;
 import android.graphics.PointF;
 import android.graphics.Region;
 import android.graphics.drawable.GradientDrawable;
+import android.util.Log;
+import android.view.GestureDetector;
+import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Scroller;
-
-import com.hj.interpolator.BackInterpolator;
-import com.hj.interpolator.Type;
 
 public class PageWidget extends View{
 	private static final int DURATION = 1200;
@@ -73,6 +73,8 @@ public class PageWidget extends View{
 	
 	private Scroller mScroller;
 	
+	private GestureDetector mGestureDetector;
+	
 	public PageWidget(Context context) {
 		super(context);
 		mMatrixArray = new float[]{
@@ -98,6 +100,66 @@ public class PageWidget extends View{
 		mScroller = new Scroller(getContext());
 		mTouch.x = 0.01f;
 		mTouch.y = 0.01f;
+		
+		mGestureDetector = new GestureDetector(gestureListener);
+		mGestureDetector.setIsLongpressEnabled(false);
+		setFocusable(true);
+		setFocusableInTouchMode(true);
+	}
+	
+	SimpleOnGestureListener gestureListener = new SimpleOnGestureListener() {
+
+		@Override
+		public boolean onDown(MotionEvent e) {
+			Log.i("====", "gesture------------onDown");
+			mTouch.x = e.getX();
+			mTouch.y = e.getY();
+			return true;
+		}
+
+		@Override
+		public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX,
+				float velocityY) {
+			Log.i("====", "gesture------------onFling");
+			if(Math.abs(velocityX)>200)
+			{
+				startAnimation(DURATION);
+				return true;
+			}
+			return false;
+		}
+		
+	};
+	
+	public boolean doTouchEvent(MotionEvent event)
+	{
+//		boolean rc = mGestureDetector.onTouchEvent(event);
+		if(true)
+		{
+			if(event.getAction() == MotionEvent.ACTION_UP)
+			{
+				Log.i("====", "Touch------------Action_UP");
+				if(Math.abs(mTouch.x-mCornerX)>mWidth/2)
+				{
+					startAnimation(DURATION);
+					postInvalidate();
+				}
+				else
+				{
+					recoverAnimation(600);
+					postInvalidate();
+					return false;
+				}
+			}
+			else if(event.getAction() == MotionEvent.ACTION_MOVE)
+			{
+				Log.i("====", "Touch------------Action_MOVE");
+				mTouch.x = event.getX();
+				mTouch.y = event.getY();
+				postInvalidate();
+			}
+		}
+		return true;
 	}
 	
 	private void calcPoints()
@@ -435,30 +497,6 @@ public class PageWidget extends View{
 		}
 	}
 	
-	public boolean doTouchEvent(MotionEvent event)
-	{
-		if(event.getAction() == MotionEvent.ACTION_UP)
-		{
-			if(!canDragOver())
-			{
-				mTouch.x = mCornerX-0.09f;
-				mTouch.y = mCornerY-0.09f;
-			}
-			else
-			{
-				startAnimation(DURATION);
-				postInvalidate();
-			}
-		}
-		else if(event.getAction() == MotionEvent.ACTION_MOVE)
-		{
-			mTouch.x = event.getX();
-			mTouch.y = event.getY();
-			postInvalidate();
-		}
-		return true;
-	}
-	
 	private void startAnimation(int duration)
 	{
 		int dx;
@@ -472,6 +510,12 @@ public class PageWidget extends View{
 		else
 			dy = (int)(1.0f - mTouch.y);
 		mScroller.startScroll((int)mTouch.x, (int)mTouch.y, dx, dy, duration);
+	}
+	
+	private void recoverAnimation(int duration)
+	{
+		mScroller.startScroll((int)mTouch.x, (int)mTouch.y, 
+				mCornerX-(int)mTouch.x, mCornerY-(int)mTouch.y, duration);
 	}
 	
 	public boolean dragToRight()

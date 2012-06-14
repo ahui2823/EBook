@@ -84,9 +84,17 @@ public class EBookActivity extends Activity {
 					}
 					mPageFactory.onDraw(mNextPageCanvas);
 					mPageWidget.setBitmaps(AppData.mCurPageBitmap, AppData.mNextPageBitmap);
-					return true;
+//					return true;
 				}
-				return mPageWidget.doTouchEvent(event);
+				boolean rc = mPageWidget.doTouchEvent(event);
+				if(rc==false)
+				{
+					if(mPageFactory.isLastGetNext())
+						mPageFactory.prePage();
+					else
+						mPageFactory.nextPage();
+				}
+				return true;
 			}});
     }
 }
