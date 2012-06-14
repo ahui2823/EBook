@@ -15,6 +15,9 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Scroller;
 
+import com.hj.interpolator.BackInterpolator;
+import com.hj.interpolator.Type;
+
 public class PageWidget extends View{
 	private static final int DURATION = 1200;
 	private PointF mBezierControl1 = new PointF();
@@ -91,6 +94,7 @@ public class PageWidget extends View{
 		});
 		mColorMatrixFilter = new ColorMatrixColorFilter(colorMatrix);
 		mMatrix = new Matrix();
+//		mScroller = new Scroller(getContext(), new BackInterpolator(Type.OUT, 2));
 		mScroller = new Scroller(getContext());
 		mTouch.x = 0.01f;
 		mTouch.y = 0.01f;
@@ -433,20 +437,18 @@ public class PageWidget extends View{
 	
 	public boolean doTouchEvent(MotionEvent event)
 	{
-		if(event.getAction() == MotionEvent.ACTION_DOWN)
-		{
-			mTouch.x = event.getX();
-			mTouch.y = event.getY();
-		}
-		else if(event.getAction() == MotionEvent.ACTION_UP)
+		if(event.getAction() == MotionEvent.ACTION_UP)
 		{
 			if(!canDragOver())
 			{
 				mTouch.x = mCornerX-0.09f;
 				mTouch.y = mCornerY-0.09f;
 			}
-			startAnimation(DURATION);
-			postInvalidate();
+			else
+			{
+				startAnimation(DURATION);
+				postInvalidate();
+			}
 		}
 		else if(event.getAction() == MotionEvent.ACTION_MOVE)
 		{
@@ -459,25 +461,17 @@ public class PageWidget extends View{
 	
 	private void startAnimation(int duration)
 	{
-		int x;
-		int y;
+		int dx;
+		int dy;
 		if(mCornerX>0)
-		{
-			x = -(int)(mWidth+mTouch.x);
-		}
+			dx = -(int)(mWidth+mTouch.x);
 		else
-		{
-			x = (int)(mWidth-mTouch.x)+mWidth;
-		}
+			dx = (int)(mWidth-mTouch.x)+mWidth;
 		if(mCornerY>0)
-		{
-			y = (int)(1.0f - mTouch.y);
-		}
+			dy = (int)(mHeight - mTouch.y);
 		else
-		{
-			y = (int)(mHeight - mTouch.y);
-		}
-		mScroller.startScroll((int)mTouch.x, (int)mTouch.y, x, y, duration);
+			dy = (int)(1.0f - mTouch.y);
+		mScroller.startScroll((int)mTouch.x, (int)mTouch.y, dx, dy, duration);
 	}
 	
 	public boolean dragToRight()
