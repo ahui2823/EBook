@@ -15,9 +15,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Scroller;
 
-import com.hj.interpolator.BackInterpolator;
-import com.hj.interpolator.Type;
-
 public class PageWidget extends View{
 	private static final int DURATION = 1200;
 	private PointF mBezierControl1 = new PointF();
@@ -48,8 +45,8 @@ public class PageWidget extends View{
 	private GradientDrawable mFrontShadowDrawableVLR;
 	private GradientDrawable mFrontShadowDrawableVRL;
 	
-	private int mHeight = 800;
-	private int mWidth = 480;
+	private int mHeight;
+	private int mWidth;
 	private boolean mIsRTandLB;
 	private Matrix mMatrix;
 	private float[] mMatrixArray;
@@ -169,8 +166,8 @@ public class PageWidget extends View{
 	
 	private void drawCurrentBackArea(Canvas canvas, Bitmap bitmap)
 	{
-		float f1 = Math.min(Math.abs((int)(mBezierStart1.x + mBezierControl1.x)/2-mBezierControl1.x), 
-				Math.abs((int)(mBezierStart2.y + mBezierControl2.y)/2-mBezierControl2.y));
+		float f1 = Math.min(Math.abs((int)(mBezierControl1.x-mBezierStart1.x)/2), 
+				Math.abs((int)(mBezierControl2.y-mBezierStart2.y)/2));
 	    mPath1.reset();
 	    mPath1.moveTo(mBezierVertex2.x, mBezierVertex2.y);
 	    mPath1.lineTo(mBezierVertex1.x, mBezierVertex1.y);
@@ -201,10 +198,10 @@ public class PageWidget extends View{
 	    float f2 = (float)Math.hypot(mCornerX - mBezierControl1.x, mBezierControl2.y - mCornerY);
 		float f3 = (mCornerX - mBezierControl1.x) / f2;
 		float f4 = (mBezierControl2.y - mCornerY) / f2;
-		mMatrixArray[0] = (1.0F - f4 * (2.0F * f4));
-		mMatrixArray[1] = (f4 * (2.0F * f3));
+		mMatrixArray[0] = 1.0F - 2.0F * f4 * f4;
+		mMatrixArray[1] = 2.0F * f4 * f3;
 		mMatrixArray[3] = mMatrixArray[1];
-		mMatrixArray[4] = (1.0F - f3 * (2.0F * f3));
+		mMatrixArray[4] = 1.0F - 2.0F * f3 * f3;
 		mMatrix.reset();
 		mMatrix.setValues(mMatrixArray);
 		mMatrix.preTranslate(-mBezierControl1.x, -mBezierControl1.y);
@@ -217,7 +214,7 @@ public class PageWidget extends View{
 		canvas.restore();
 	}
 	
-	private void drawCurrentPageArea(Canvas canvas, Bitmap bitmap, Path path)
+	private void drawCurrentPageArea(Canvas canvas, Bitmap bitmap)
 	{
 		mPath0.reset();
 		mPath0.moveTo(mBezierStart1.x, mBezierStart1.y);
@@ -228,7 +225,7 @@ public class PageWidget extends View{
 		mPath0.lineTo(mCornerX, mCornerY);
 		mPath0.close();
 		canvas.save();
-		canvas.clipPath(path, Region.Op.XOR);
+		canvas.clipPath(mPath0, Region.Op.XOR);
 		canvas.drawBitmap(bitmap, 0.0f, 0.0f, null);
 		canvas.restore();
 	}
@@ -246,18 +243,18 @@ public class PageWidget extends View{
 		mDegrees = (float)Math.toDegrees(Math.atan2(mBezierControl1.x - mCornerX, mBezierControl2.y - mCornerY));
 		
 		int left;
-		int top;
+		int right;
 		GradientDrawable gradientDrawable;
 		if(mIsRTandLB)
 		{
 			left = (int)mBezierStart1.x;
-			top = (int)(mBezierStart1.x + mTouchToCornerDis/4.0f);
+			right = (int)(mBezierStart1.x + mTouchToCornerDis/4.0f);
 			gradientDrawable = mBackShadowDrawableLR;
 		}
 		else
 		{
 			left = (int)(mBezierStart1.x - mTouchToCornerDis/4.0f);
-			top = (int)mBezierStart1.x;
+			right = (int)mBezierStart1.x;
 			gradientDrawable = mBackShadowDrawableRL;
 		}
 		
@@ -267,7 +264,7 @@ public class PageWidget extends View{
 		canvas.drawBitmap(bitmap, 0.0f, 0.0f, null);
 		canvas.rotate(mDegrees, mBezierStart1.x, mBezierStart1.y);
 		gradientDrawable.setBounds(left, (int)mBezierStart1.y, 
-				top, (int)(mMaxLength + mBezierStart1.y));
+				right, (int)(mMaxLength + mBezierStart1.y));
 		gradientDrawable.draw(canvas);
 		canvas.restore();
 	}
@@ -385,7 +382,7 @@ public class PageWidget extends View{
 	protected void onDraw(Canvas canvas) {
 		canvas.drawColor(0xffaaaaaa);
 		calcPoints();
-		drawCurrentPageArea(canvas, mCurPageBitmap, mPath0);
+		drawCurrentPageArea(canvas, mCurPageBitmap);
 		drawNextPageAreaAndShadow(canvas, mNextPageBitmap);
 		drawCurrentPageShadow(canvas);
 		drawCurrentBackArea(canvas, mCurPageBitmap);
@@ -454,6 +451,7 @@ public class PageWidget extends View{
 		{
 			mTouch.x = event.getX();
 			mTouch.y = event.getY();
+			
 			postInvalidate();
 		}
 		return true;
