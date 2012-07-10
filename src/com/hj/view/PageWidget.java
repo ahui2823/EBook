@@ -451,7 +451,6 @@ public class PageWidget extends View{
 		{
 			mTouch.x = event.getX();
 			mTouch.y = event.getY();
-			
 			postInvalidate();
 		}
 		return true;
